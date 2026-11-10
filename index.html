@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0F1416">
+<meta name="description" content="AI gaane ki kamiyan dekho aur bass aur 10-band EQ se apni marzi se set karo.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gaana EQ">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Gaana EQ Studio</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: loader on top, then spectrum + transport, AI-feel verdict, EQ console, export.
+   Wide screens put the verdict beside the spectrum. Panels are flat, console-like, no shadows. */
+:root{
+  --bg:#E7EAE6; --panel:#F3F5F1; --ink:#162124; --mute:#566568; --line:#C6CEC9; --line2:#DCE2DD;
+  --accent:#2748E8; --accent-ink:#FFFFFF; --spec:#13826F; --ghost:#7C8A8D;
+  --good:#1B7F47; --warn:#A86A0B; --bad:#BE3A27;
+  --good-bg:rgba(27,127,71,.13); --warn-bg:rgba(168,106,11,.15); --bad-bg:rgba(190,58,39,.14);
+  --f-display:"Space Grotesk",system-ui,sans-serif;
+  --f-body:"Inter",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1416; --panel:#161D20; --ink:#E4EBE8; --mute:#8A9A9D; --line:#2B363A; --line2:#222C2F;
+    --accent:#8AA0FF; --accent-ink:#0B1233; --spec:#3FBFA8; --ghost:#6F7E82;
+    --good:#4CC38A; --warn:#E3A94B; --bad:#F0715E;
+    --good-bg:rgba(76,195,138,.15); --warn-bg:rgba(227,169,75,.16); --bad-bg:rgba(240,113,94,.16);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1416; --panel:#161D20; --ink:#E4EBE8; --mute:#8A9A9D; --line:#2B363A; --line2:#222C2F;
+  --accent:#8AA0FF; --accent-ink:#0B1233; --spec:#3FBFA8; --ghost:#6F7E82;
+  --good:#4CC38A; --warn:#E3A94B; --bad:#F0715E;
+  --good-bg:rgba(76,195,138,.15); --warn-bg:rgba(227,169,75,.16); --bad-bg:rgba(240,113,94,.16);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--ink); font:14px/1.5 var(--f-body);
+  padding-block:18px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.app{max-width:1080px;margin:0 auto}
+h1{font:600 26px/1.15 var(--f-display);letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance}
+.sub{margin:0 0 16px;color:var(--mute);max-width:60ch;text-wrap:pretty}
+.layout{display:grid;gap:12px;grid-template-columns:minmax(0,1fr);
+  grid-template-areas:"load" "an" "ve" "eq" "ex"}
+.a-load{grid-area:load}.a-an{grid-area:an}.a-ve{grid-area:ve}.a-eq{grid-area:eq}.a-ex{grid-area:ex}
+@media (min-width:960px){
+  .layout{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);grid-template-areas:"load load" "an ve" "eq ex";align-items:start}
+}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 14px 16px;min-width:0}
+.head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.eyebrow{font:600 11px/1 var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.btn{font:500 14px/1 var(--f-body);min-height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover{border-color:var(--mute)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.small{min-height:34px;padding:0 11px;font-size:13px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+:is(.btn,.chip,.seg button,.play):focus-visible,label.btn:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.chip{font:500 13px/1 var(--f-body);min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.chip:hover{border-color:var(--mute)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{font:500 13px/1 var(--f-body);min-height:34px;padding:0 12px;border:0;background:transparent;color:var(--mute);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+
+/* loader */
+.load .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.fileinfo{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;min-width:0;flex:1 1 200px}
+.fileinfo #fname{font-size:13px;overflow-wrap:anywhere}
+.fileinfo #fmeta{color:var(--mute);font-size:12px}
+.status{margin:10px 0 0;color:var(--mute);font-size:13px;min-height:1.5em}
+.status.err{color:var(--bad)}
+.panel.drag{border-color:var(--accent);background:var(--good-bg)}
+
+/* analyzer */
+.cv{position:relative;height:250px}
+.cv canvas{width:100%;height:100%;display:block}
+@media (min-width:960px){.cv{height:300px}}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 12px;color:var(--mute);font-size:12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:16px;height:0;border-top:2px solid}
+.legend i.fill{height:8px;border:0;background:var(--ghost);opacity:.35;border-radius:2px}
+.transport{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px}
+.play{width:46px;height:46px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);cursor:pointer;display:grid;place-items:center;flex:none}
+.play[disabled]{opacity:.45;cursor:not-allowed}
+.play svg{width:20px;height:20px;fill:currentColor}
+.time{font-size:13px;color:var(--mute)}
+.seek{order:5;flex:1 1 100%}
+
+/* range inputs */
+input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;margin:0;cursor:pointer}
+input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+input[type=range].h{width:100%;height:28px}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--line);border-radius:2px}
+input[type=range]::-moz-range-track{height:3px;background:var(--line);border-radius:2px}
+input[type=range].h::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-7.5px;border-radius:50%;background:var(--accent);border:0}
+input[type=range].h::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--accent);border:0}
+input[type=range].v::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:26px;margin-top:-11.5px;border-radius:3px;background:var(--panel);border:2px solid var(--accent)}
+input[type=range].v::-moz-range-thumb{width:10px;height:22px;border-radius:3px;background:var(--panel);border:2px solid var(--accent)}
+
+/* verdict */
+.score{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:center;margin-bottom:6px}
+.score .num{font:500 44px/1 var(--f-mono);font-variant-numeric:tabular-nums}
+.score .meter{height:8px;border-radius:4px;background:var(--line2);overflow:hidden}
+.score .meter div{height:100%;width:0;border-radius:4px;background:var(--good);transition:width .4s ease}
+.score .lab{grid-column:1/-1;font-weight:600}
+.score .hint{grid-column:1/-1;color:var(--mute);font-size:12px;margin:0}
+.finds{list-style:none;margin:12px 0 12px;padding:0}
+.finds li{padding:11px 0;border-top:1px solid var(--line2);display:grid;gap:5px}
+.fhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fhead strong{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.pill{font:600 11px/1 var(--f-body);padding:5px 8px;border-radius:999px;white-space:nowrap}
+.pill.good{background:var(--good-bg);color:var(--good)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.fdet{color:var(--mute);font-size:13px;margin:0;text-wrap:pretty}
+.finds .btn{justify-self:start}
+details{margin-top:12px;color:var(--mute);font-size:13px}
+details summary{cursor:pointer;color:var(--ink);font-weight:500}
+details p{margin:8px 0 0;text-wrap:pretty}
+.empty{color:var(--mute);font-size:13px;margin:8px 0}
+
+/* eq console */
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.macros{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 22px;margin-bottom:16px}
+.macro .mh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.macro label{font-weight:500}
+.macro output{font:500 12px var(--f-mono);color:var(--accent)}
+.bands{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:2px}
+.band{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.fader{position:relative;width:100%;height:156px}
+.fader::before{content:"";position:absolute;left:22%;right:22%;top:50%;height:1px;background:var(--mute);opacity:.6}
+.fader input{position:absolute;left:50%;top:50%;width:156px;height:32px;margin:-16px 0 0 -78px;transform:rotate(-90deg);touch-action:none}
+.band .bv{font:500 10px var(--f-mono);color:var(--mute)}
+.band .bv.on{color:var(--accent)}
+.band .bl{font:500 11px var(--f-mono);color:var(--ink)}
+.expnote{color:var(--mute);font-size:12px;margin:10px 0 0;text-wrap:pretty}
+@media (prefers-reduced-motion:reduce){.score .meter div{transition:none}}
+</style>
+
+</head>
+<body>
+<main class="app">
+  <header>
+    <h1>Gaana EQ Studio</h1>
+    <p class="sub">AI se bana gaana chuno, dekho kahan AI jaisa lagta hai, phir bass aur baaki sab apni marzi se set karo.</p>
+  </header>
+
+  <div class="layout">
+    <section class="panel load a-load" id="dz" aria-label="Gaana chuno">
+      <div class="row">
+        <label class="btn primary" for="file">Gaana chuno<input id="file" class="sr" type="file" accept="audio/*,.mp3,.wav,.m4a,.flac,.ogg"></label>
+        <button class="btn" id="demoBtn" type="button">Demo gaana</button>
+        <div class="fileinfo"><span id="fname" class="mono">Demo gaana</span><span id="fmeta"></span></div>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite">Demo gaana taiyaar ho raha hai…</p>
+    </section>
+
+    <section class="panel a-an" aria-label="Spectrum aur player">
+      <div class="head">
+        <span class="eyebrow">Spectrum</span>
+        <div class="seg" role="group" aria-label="Kya sunna hai">
+          <button id="abOrig" type="button" aria-pressed="false">Original</button>
+          <button id="abEq" type="button" aria-pressed="true">EQ ke saath</button>
+        </div>
+      </div>
+      <div class="cv"><canvas id="cv" role="img" aria-label="Frequency spectrum, EQ curve aur problem zones"></canvas></div>
+      <div class="legend">
+        <span><i class="fill"></i>Original (average)</span>
+        <span><i style="border-color:var(--spec)"></i>Abhi (live)</span>
+        <span><i style="border-color:var(--accent)"></i>EQ curve</span>
+      </div>
+      <div class="transport">
+        <button class="play" id="play" type="button" aria-label="Chalao" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path id="playIcon" d="M8 5v14l11-7z"/></svg></button>
+        <span class="mono time"><span id="tcur">0:00</span> / <span id="tdur">0:00</span></span>
+        <button class="chip" id="loopBtn" type="button" aria-pressed="true">Loop</button>
+        <input id="seek" class="h seek" type="range" min="0" max="1000" value="0" aria-label="Gaane mein kahan">
+      </div>
+    </section>
+
+    <section class="panel a-ve" aria-label="AI-feel check">
+      <div class="head"><span class="eyebrow">AI-feel check</span></div>
+      <div class="score">
+        <div class="num" id="scoreNum">–</div>
+        <div class="meter" aria-hidden="true"><div id="scoreBar"></div></div>
+        <div class="lab" id="scoreLab">Gaana chuno to check ho jayega</div>
+        <p class="hint">Yeh 0 se 100 ka andaza hai. Jitna zyada, utni zyada AI wali chhap.</p>
+      </div>
+      <ul class="finds" id="finds"></ul>
+      <button class="btn primary" id="autoFix" type="button" disabled>Sab auto-fix lagao</button>
+      <details>
+        <summary>Yeh kaise nikalta hai?</summary>
+        <p>Gaane ke average spectrum ko ek aam, balanced master se compare kiya jata hai. 3–8 kHz ka zyada hona, 16 kHz par awaaz kat jana, dabi hui dynamics aur dhundhli beech ki awaaz AI gaano mein aam milte hain. Yeh sirf awaaz ke patterns se andaza hai, pakka saboot nahi. Bass-heavy genre mein bass wali line ko ignore kar sakte ho.</p>
+      </details>
+    </section>
+
+    <section class="panel a-eq" aria-label="Equalizer">
+      <div class="head">
+        <span class="eyebrow">Equalizer</span>
+        <button class="btn small" id="resetBtn" type="button">Reset</button>
+      </div>
+      <div class="presets" id="presets" role="group" aria-label="Presets"></div>
+      <div class="macros" id="macros"></div>
+      <div class="bands" id="bands" role="group" aria-label="10 band EQ"></div>
+    </section>
+
+    <section class="panel a-ex" aria-label="Save karo">
+      <div class="head"><span class="eyebrow">Save karo</span></div>
+      <button class="btn primary" id="exportBtn" type="button" disabled>EQ wala gaana save karo</button>
+      <p class="expnote" id="expNote">Yeh viewer direct .wav save nahi karne deta, isliye WAV file .zip ke andar milegi. Unzip karke Suno ya kisi bhi app mein use karo.</p>
+    </section>
+  </div>
+</main>
+
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id);};
+var BANDS=[31,62,125,250,500,1000,2000,4000,8000,16000];
+var BL=['31','62','125','250','500','1k','2k','4k','8k','16k'];
+var REF=[-19,-7,-2,-1,0.5,1,-1.5,-6,-11,-20];
+var N=8192, LP=220, FMIN=20, FMAX=20000, DBMIN=-105, DBMAX=-25;
+var st={gains:[0,0,0,0,0,0,0,0,0,0],bass:0,treble:0,vol:0,lowcut:0,bypass:false};
+var ctx=null, ch=null, dry=null, wet=null, analyser=null, input=null;
+var buf=null, src=null, playing=false, startedAt=0, offset=0, loop=true, an=null;
+var fileBase='gaana', raf=0, drawUntil=0, dlCap=null, busy=false, standalone=false;
+var freqs=new Float32Array(LP);
+for(var q=0;q<LP;q++){freqs[q]=FMIN*Math.pow(FMAX/FMIN,q/(LP-1));}
+var clamp=function(v,a,b){return Math.max(a,Math.min(b,v));};
+var fmtDb=function(g){return (g>0?'+':g<0?'−':'')+Math.abs(g).toFixed(Number.isInteger(g)?0:1);};
+var fmtT=function(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
+function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
+
+/* ---------- FFT ---------- */
+function makeFFT(n){
+  var levels=Math.round(Math.log2(n));
+  var cos=new Float64Array(n/2), sin=new Float64Array(n/2), rev=new Uint32Array(n);
+  for(var i=0;i<n/2;i++){cos[i]=Math.cos(2*Math.PI*i/n);sin[i]=Math.sin(2*Math.PI*i/n);}
+  for(var i2=0;i2<n;i2++){var x=i2,r=0;for(var j=0;j<levels;j++){r=(r<<1)|(x&1);x>>=1;}rev[i2]=r;}
+  return function(re,im){
+    for(var i=0;i<n;i++){var j=rev[i];if(j>i){var t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}}
+    for(var size=2;size<=n;size<<=1){
+      var half=size>>1, step=n/size;
+      for(var i3=0;i3<n;i3+=size){
+        for(var a=i3,k=0;a<i3+half;a++,k+=step){
+          var b=a+half;
+          var tre=re[b]*cos[k]+im[b]*sin[k];
+          var tim=-re[b]*sin[k]+im[b]*cos[k];
+          re[b]=re[a]-tre;im[b]=im[a]-tim;re[a]+=tre;im[a]+=tim;
+        }
+      }
+    }
+  };
+}
+var fft=makeFFT(N);
+var hann=new Float64Array(N);
+for(var hi=0;hi<N;hi++){hann[hi]=0.5-0.5*Math.cos(2*Math.PI*hi/(N-1));}
+
+/* ---------- log-frequency curve from dB bins ---------- */
+function logCurve(db,binHz,out){
+  var n=db.length, half=Math.pow(2,1/12);
+  for(var i=0;i<LP;i++){
+    var f=freqs[i], k0=f/half/binHz, k1=f*half/binHz;
+    if(k1-k0>=1.5){
+      var s=0,c=0,ka=Math.max(1,Math.ceil(k0)),kb=Math.min(n-1,Math.floor(k1));
+      for(var k=ka;k<=kb;k++){s+=Math.pow(10,Math.max(db[k],-140)/10);c++;}
+      out[i]=c?10*Math.log10(s/c+1e-14):-140;
+    }else{
+      var kk=clamp(f/binHz,1,n-2), kf=Math.floor(kk), fr=kk-kf;
+      out[i]=Math.max(db[kf],-140)*(1-fr)+Math.max(db[kf+1],-140)*fr;
+    }
+  }
+  return out;
+}
+
+/* ---------- analysis ---------- */
+function analyze(b){
+  var sr=b.sampleRate, L=b.getChannelData(0), R=b.numberOfChannels>1?b.getChannelData(1):L, len=b.length;
+  if(len<N*2){return null;}
+  var peak=0,sumM=0,sumS=0,sumL=0,sumR=0;
+  for(var i=0;i<len;i++){
+    var l=L[i],r=R[i],m=(l+r)*0.5,s=(l-r)*0.5;
+    sumM+=m*m;sumS+=s*s;sumL+=l*l;sumR+=r*r;
+    var a=Math.abs(l);if(a>peak)peak=a;a=Math.abs(r);if(a>peak)peak=a;
+  }
+  var rms=Math.sqrt((sumL+sumR)/(2*len));
+  var crest=20*Math.log10((peak+1e-9)/(rms+1e-9));
+  var sideDb=10*Math.log10((sumS+1e-12)/(sumM+1e-12));
+  var mono=b.numberOfChannels===1||sumS<1e-9*len;
+  var frames=Math.min(64,Math.floor(len/N)), re=new Float64Array(N), im=new Float64Array(N), P=new Float64Array(N/2), used=0;
+  for(var f=0;f<frames;f++){
+    var start=frames===1?0:Math.floor(f*(len-N)/(frames-1));
+    var e=0;
+    for(var j=0;j<N;j++){var v=(L[start+j]+R[start+j])*0.5;re[j]=v*hann[j];im[j]=0;e+=v*v;}
+    if(e/N<1e-8)continue;
+    fft(re,im);
+    for(var k=0;k<N/2;k++){P[k]+=re[k]*re[k]+im[k]*im[k];}
+    used++;
+  }
+  if(!used)return null;
+  var binHz=sr/N, nyq=sr/2;
+  var dbBins=new Float32Array(N/2);
+  for(var k2=0;k2<N/2;k2++){dbBins[k2]=10*Math.log10(P[k2]/used/(N*N)+1e-20);}
+  var oct=BANDS.map(function(fc){
+    var lo=fc/Math.SQRT2, hi=Math.min(fc*Math.SQRT2,nyq*0.98), s=0;
+    for(var k=Math.max(1,Math.ceil(lo/binHz));k<=Math.floor(hi/binHz);k++){s+=P[k]/used;}
+    return 10*Math.log10(s/(N*N)+1e-20);
+  });
+  var L0=(oct[4]+oct[5]+oct[6])/3;
+  var dev=oct.map(function(o,i){return o-L0-REF[i];});
+
+  /* hard low-pass cliff */
+  function meanDb(a,b2){
+    var k0=Math.max(1,Math.floor(a/binHz)),k1=Math.min(N/2-1,Math.floor(b2/binHz)),s=0,c=0;
+    for(var k=k0;k<=k1;k++){s+=dbBins[k];c++;}
+    return c?s/c:NaN;
+  }
+  var cut=null, best=0, bestF=0;
+  for(var ff=12000;ff<=Math.min(19500,nyq-1500);ff+=250){
+    var d=meanDb(ff-3000,ff-500)-meanDb(ff+500,Math.min(ff+3000,nyq-100));
+    if(d>best){best=d;bestF=ff;}
+  }
+  if(best>20){
+    var lvl=meanDb(bestF-3000,bestF-500), found=bestF;
+    for(var kk=Math.floor((bestF-1500)/binHz);kk<Math.floor((bestF+2500)/binHz);kk++){
+      var s2=0;for(var q2=0;q2<6;q2++){s2+=dbBins[kk+q2];}
+      if(s2/6<lvl-15){found=kk*binHz;break;}
+    }
+    cut={f:Math.round(found/100)*100,drop:best};
+  }
+
+  var auto=dev.map(function(dv,i){
+    var g=Math.abs(dv)<2.5?0:-dv*0.55;
+    g=clamp(g,-6,4);
+    if(i===9&&cut)g=0;
+    return Math.round(g*2)/2;
+  });
+  var res={sr:sr,nyq:nyq,dev:dev,cut:cut,crest:crest,sideDb:sideDb,mono:mono,auto:auto};
+  res.curve=logCurve(dbBins,binHz,new Float32Array(LP));
+  makeFindings(res);
+  return res;
+}
+
+function makeFindings(m){
+  var F=[], score=0, dev=m.dev, auto=m.auto;
+  var level=function(v,w,b){return v>b?'bad':v>w?'warn':'good';};
+  var add=function(o){F.push(o);};
+  /* low-pass cliff */
+  var cs=m.cut?(m.cut.f<=16500?'bad':'warn'):'good';
+  var khz=m.cut?(Math.round(m.cut.f/500)/2):0;
+  add({id:'cut',sev:cs,zone:m.cut?[m.cut.f,Math.min(m.nyq,FMAX)]:null,zl:'kata',
+    title:m.cut?'Upar ki awaaz kati hui hai (~'+khz+' kHz)':'Upar tak poori awaaz hai',
+    detail:m.cut?khz+' kHz ke upar lagbhag kuch nahi bacha, jaise codec ne kaat diya ho. Gaana thoda band-band aur dabba lagta hai. EQ se yeh wapas nahi aata.':'Koi kata hua (low-pass) hissa nahi mila.',
+    bands:[],fixLabel:''});
+  score+=cs==='bad'?25:cs==='warn'?12:0;
+  /* harsh */
+  var hv=Math.max(dev[7],dev[8]), hs=level(hv,4,7);
+  var hb=[7,8].concat(dev[6]>3?[6]:[]);
+  add({id:'harsh',sev:hs,zone:[3000,9000],zl:'tez',
+    title:hs==='good'?'3–8 kHz balanced hai':'Kaanch jaisi tez awaaz (3–8 kHz)',
+    detail:hs==='good'?'Upar ka hissa natural range mein hai.':'Yeh hissa '+hv.toFixed(0)+' dB zyada hai. AI gaano mein aksar yahi chamak pehchaan ban jati hai.',
+    bands:hb,fixLabel:'4k / 8k par '+fmtDb(auto[7])+' / '+fmtDb(auto[8])+' dB lagao'});
+  score+=hs==='bad'?25:hs==='warn'?12:0;
+  /* mud */
+  var mv=dev[3], ms=level(mv,4,7);
+  var mb=[3].concat(dev[2]>3?[2]:[]).concat(dev[4]>3?[4]:[]);
+  add({id:'mud',sev:ms,zone:[150,500],zl:'bhaari',
+    title:ms==='good'?'Beech ki awaaz saaf hai':'Beech ki awaaz dabi hui (150–500 Hz)',
+    detail:ms==='good'?'150–500 Hz mein bhaari-pan nahi mila.':'Vocals aur instruments bhari ya dhundhli lagte hain, '+mv.toFixed(0)+' dB zyada.',
+    bands:mb,fixLabel:'250 Hz par '+fmtDb(auto[3])+' dB lagao'});
+  score+=ms==='bad'?15:ms==='warn'?8:0;
+  /* bass */
+  var bv=(dev[1]+dev[2])/2, bs='good', btitle='Bass balanced hai', bdet='60–150 Hz normal range mein hai.';
+  if(bv<-5){bs=bv<-8?'bad':'warn';btitle='Bass patla hai (60–150 Hz)';bdet='Neeche ka hissa '+Math.abs(bv).toFixed(0)+' dB kam hai. Bass slider ya 62 / 125 Hz badhao.';}
+  else if(bv>6){bs='warn';btitle='Bass bahut zyada hai (60–150 Hz)';bdet='Genre ke hisaab se theek ho sakta hai, warna thoda kam karo.';}
+  var bb=[1,2].concat(Math.abs(dev[0])>3?[0]:[]);
+  add({id:'bass',sev:bs,zone:[45,160],zl:'bass',title:btitle,detail:bdet,bands:bb,
+    fixLabel:'62 / 125 Hz par '+fmtDb(auto[1])+' / '+fmtDb(auto[2])+' dB lagao'});
+  score+=bs==='bad'?15:bs==='warn'?8:0;
+  /* dynamics */
+  var ds=m.crest<7?'bad':m.crest<9?'warn':'good';
+  add({id:'dyn',sev:ds,zone:null,
+    title:ds==='good'?'Dynamics theek hain':'Dynamics dabi hui (crest '+m.crest.toFixed(0)+' dB)',
+    detail:ds==='good'?'Awaaz mein saans lene ki jagah hai.':'Gaana ekdum sapaat aur thaka hua lagta hai. Yeh EQ se theek nahi hota.',bands:[],fixLabel:''});
+  score+=ds==='bad'?15:ds==='warn'?8:0;
+  /* stereo */
+  var ss=m.mono?'warn':m.sideDb<-30?'bad':m.sideDb<-22?'warn':'good';
+  add({id:'st',sev:ss,zone:null,
+    title:m.mono?'Mono file hai':ss==='good'?'Stereo spread theek hai':'Stereo chaudai kam hai',
+    detail:m.mono?'Dono taraf same awaaz hai, stereo spread nahi hai.':ss==='good'?'Left aur right mein achha farak hai.':'Left aur right lagbhag same hain, gaana sankra lagta hai.',bands:[],fixLabel:''});
+  score+=ss==='bad'?10:ss==='warn'?5:0;
+  m.findings=F;
+  m.score=Math.min(100,score);
+}
+
+/* ---------- audio graph ---------- */
+function makeChain(c){
+  var lowcut=c.createBiquadFilter();lowcut.type='highpass';lowcut.frequency.value=5;lowcut.Q.value=0.707;
+  var bass=c.createBiquadFilter();bass.type='lowshelf';bass.frequency.value=110;bass.gain.value=0;
+  var bands=BANDS.map(function(f,i){
+    var n=c.createBiquadFilter();
+    n.type=i===0?'lowshelf':i===9?'highshelf':'peaking';
+    n.frequency.value=i===0?45:i===9?12000:f;
+    n.Q.value=1.4;n.gain.value=0;return n;
+  });
+  var treble=c.createBiquadFilter();treble.type='highshelf';treble.frequency.value=6500;treble.gain.value=0;
+  var lim=c.createDynamicsCompressor();
+  lim.threshold.value=-1.5;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=0.002;lim.release.value=0.08;
+  var chain=[lowcut,bass].concat(bands,[treble,lim]);
+  for(var i=0;i<chain.length-1;i++){chain[i].connect(chain[i+1]);}
+  return {head:lowcut,tail:lim,lowcut:lowcut,bass:bass,bands:bands,treble:treble,limiter:lim};
+}
+function initAudio(){
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;
+    ctx=new AC();
+    ch=makeChain(ctx);
+    input=ctx.createGain();dry=ctx.createGain();wet=ctx.createGain();
+    var out=ctx.createGain();
+    analyser=ctx.createAnalyser();analyser.fftSize=N;analyser.smoothingTimeConstant=0.8;
+    analyser.minDecibels=-110;analyser.maxDecibels=-10;
+    input.connect(dry);dry.connect(out);
+    input.connect(ch.head);ch.tail.connect(wet);wet.connect(out);
+    out.connect(analyser);analyser.connect(ctx.destination);
+    applyAudio(true);
+    return true;
+  }catch(e){ctx=null;return false;}
+}
+function applyAudio(imm){
+  if(!ctx||!ch)return;
+  var t=ctx.currentTime, tc=imm?0.001:0.03;
+  ch.bands.forEach(function(f,i){f.gain.setTargetAtTime(st.gains[i],t,tc);});
+  ch.bass.gain.setTargetAtTime(st.bass,t,tc);
+  ch.treble.gain.setTargetAtTime(st.treble,t,tc);
+  ch.lowcut.frequency.setTargetAtTime(Math.max(st.lowcut,5),t,tc);
+  wet.gain.setTargetAtTime(st.bypass?0:Math.pow(10,st.vol/20),t,0.02);
+  dry.gain.setTargetAtTime(st.bypass?1:0,t,0.02);
+}
+
+/* ---------- player ---------- */
+function pos(){
+  if(!buf)return 0;
+  if(!playing)return offset;
+  var t=ctx.currentTime-startedAt;
+  if(loop)t=t%buf.duration;
+  return Math.min(t,buf.duration);
+}
+function stopSrc(){
+  if(src){var s=src;src=null;s.onended=null;try{s.stop();}catch(e){}try{s.disconnect();}catch(e2){}}
+}
+async function play(){
+  if(!buf||!ctx)return;
+  try{await ctx.resume();}catch(e){}
+  stopSrc();
+  var s=ctx.createBufferSource();s.buffer=buf;s.loop=loop;s.connect(input);
+  var o=clamp(offset,0,Math.max(0,buf.duration-0.02));
+  s.start(0,o);startedAt=ctx.currentTime-o;src=s;playing=true;
+  s.onended=function(){if(src===s){playing=false;src=null;offset=0;updatePlayUI();updateTime();requestDraw();}};
+  updatePlayUI();requestDraw();
+}
+function pause(){
+  if(!playing)return;
+  offset=pos();playing=false;stopSrc();updatePlayUI();requestDraw();
+}
+function updatePlayUI(){
+  var b=$('play');
+  $('playIcon').setAttribute('d',playing?'M6 5h4v14H6zM14 5h4v14h-4z':'M8 5v14l11-7z');
+  b.setAttribute('aria-label',playing?'Rok do':'Chalao');
+  b.disabled=!buf;
+}
+function updateTime(){
+  if(!buf)return;
+  var p=pos();
+  $('tcur').textContent=fmtT(p);
+  var sk=$('seek');
+  if(document.activeElement!==sk)sk.value=String(Math.round(p/buf.duration*1000));
+}
+
+/* ---------- state <-> UI ---------- */
+var bandInputs=[], bandVals=[], macroInputs={}, macroVals={};
+var MACROS=[
+  {k:'bass',label:'Bass',min:-12,max:12,step:0.5},
+  {k:'treble',label:'Treble',min:-12,max:12,step:0.5},
+  {k:'vol',label:'Volume',min:-12,max:6,step:0.5},
+  {k:'lowcut',label:'Low cut',min:0,max:150,step:10}
+];
+function macroText(k,v){
+  if(k==='lowcut')return v===0?'Off':v+' Hz';
+  return fmtDb(v)+' dB';
+}
+function setBand(i,g){
+  g=clamp(g,-12,12);st.gains[i]=g;
+  bandInputs[i].value=String(g);
+  bandVals[i].textContent=fmtDb(g);
+  bandVals[i].classList.toggle('on',g!==0);
+  bandInputs[i].setAttribute('aria-valuetext',fmtDb(g)+' dB');
+}
+function setMacro(k,v){
+  st[k]=v;macroInputs[k].value=String(v);macroVals[k].textContent=macroText(k,v);
+}
+function pushState(){applyAudio(false);requestDraw(400);}
+function setBypass(b){
+  st.bypass=b;
+  $('abOrig').setAttribute('aria-pressed',String(b));
+  $('abEq').setAttribute('aria-pressed',String(!b));
+  pushState();
+}
+function buildEq(){
+  var bw=$('bands');
+  BANDS.forEach(function(f,i){
+    var col=el('div','band'), fd=el('div','fader'), inp=document.createElement('input');
+    inp.type='range';inp.className='v';inp.min='-12';inp.max='12';inp.step='0.5';inp.value='0';
+    inp.id='band'+i;inp.setAttribute('aria-label',BL[i]+' Hz gain');
+    inp.addEventListener('input',function(){setBand(i,parseFloat(inp.value));if(st.bypass)setBypass(false);else pushState();});
+    inp.addEventListener('dblclick',function(){setBand(i,0);pushState();});
+    fd.appendChild(inp);
+    var bv=el('div','bv','0'), bl=el('div','bl',BL[i]);
+    col.appendChild(bv);col.appendChild(fd);col.appendChild(bl);
+    bw.appendChild(col);bandInputs.push(inp);bandVals.push(bv);
+  });
+  var mw=$('macros');
+  MACROS.forEach(function(m){
+    var w=el('div','macro'), h=el('div','mh'), lb=el('label',null,m.label), out=el('output','mono','0 dB');
+    var inp=document.createElement('input');
+    inp.type='range';inp.className='h';inp.min=String(m.min);inp.max=String(m.max);inp.step=String(m.step);inp.value='0';
+    inp.id='macro_'+m.k;lb.setAttribute('for',inp.id);
+    out.textContent=macroText(m.k,0);
+    inp.addEventListener('input',function(){setMacro(m.k,parseFloat(inp.value));if(st.bypass)setBypass(false);else pushState();});
+    inp.addEventListener('dblclick',function(){setMacro(m.k,0);pushState();});
+    h.appendChild(lb);h.appendChild(out);w.appendChild(h);w.appendChild(inp);mw.appendChild(w);
+    macroInputs[m.k]=inp;macroVals[m.k]=out;
+  });
+}
+var PRESETS=[
+  {n:'Seedha',g:[0,0,0,0,0,0,0,0,0,0],bass:0,treble:0},
+  {n:'Bass zyada',g:[4,5,3,1,0,0,0,0,0,0],bass:2,treble:0},
+  {n:'Vocal saaf',g:[-4,-2,0,-2,-1,0,2,2,1,0],bass:0,treble:0},
+  {n:'Garam',g:[2,2,2,1,0,0,-1,-2,-3,-3],bass:1,treble:-1},
+  {n:'Chamakdaar',g:[-1,0,0,0,0,1,1,2,3,3],bass:0,treble:1}
+];
+function applyPreset(p){
+  p.g.forEach(function(g,i){setBand(i,g);});
+  setMacro('bass',p.bass);setMacro('treble',p.treble);
+  if(st.bypass)setBypass(false);else pushState();
+}
+function resetAll(){
+  for(var i=0;i<10;i++)setBand(i,0);
+  setMacro('bass',0);setMacro('treble',0);setMacro('vol',0);setMacro('lowcut',0);
+  pushState();
+}
+function buildPresets(){
+  var w=$('presets');
+  PRESETS.forEach(function(p){
+    var b=el('button','chip',p.n);b.type='button';
+    b.addEventListener('click',function(){applyPreset(p);status(p.n+' preset lag gaya.');});
+    w.appendChild(b);
+  });
+  var a=el('button','chip','Auto-fix');a.type='button';a.id='autoChip';a.disabled=true;
+  a.addEventListener('click',autoFixAll);
+  w.appendChild(a);
+}
+function autoFixAll(){
+  if(!an)return;
+  an.auto.forEach(function(g,i){setBand(i,g);});
+  setMacro('lowcut',an.dev[0]>3?30:st.lowcut);
+  if(st.bypass)setBypass(false);else pushState();
+  status('Auto-fix lag gaya. A/B se original ke saath compare karo.');
+}
+function applyFix(f){
+  f.bands.forEach(function(i){setBand(i,an.auto[i]);});
+  if(st.bypass)setBypass(false);else pushState();
+  status('Fix lag gaya: '+f.fixLabel+'.');
+}
+
+/* ---------- verdict ---------- */
+var PILL={good:'Theek hai',warn:'Dhyan do',bad:'Zaroor theek karo'};
+function renderVerdict(){
+  var list=$('finds');list.textContent='';
+  var has=!!an;
+  $('autoFix').disabled=!has;$('autoChip').disabled=!has;
+  if(!has){
+    $('scoreNum').textContent='–';$('scoreBar').style.width='0%';
+    $('scoreLab').textContent=buf?'Gaana analysis ke liye bahut chhota ya khaali hai':'Gaana chuno to check ho jayega';
+    return;
+  }
+  var s=an.score, c=s<25?'var(--good)':s<55?'var(--warn)':'var(--bad)';
+  $('scoreNum').textContent=String(s);
+  var bar=$('scoreBar');bar.style.width=s+'%';bar.style.background=c;
+  $('scoreLab').textContent=s<25?'Kam: kaafi natural lagta hai':s<55?'Medium: kuch AI wali chhap hai':'Zyada: AI jaisi chhap saaf hai';
+  an.findings.forEach(function(f){
+    var li=el('li'), h=el('div','fhead');
+    h.appendChild(el('span','pill '+f.sev,PILL[f.sev]));
+    h.appendChild(el('strong',null,f.title));
+    li.appendChild(h);
+    li.appendChild(el('p','fdet',f.detail));
+    if(f.sev!=='good'&&f.bands.length){
+      var b=el('button','btn small',f.fixLabel);b.type='button';
+      b.addEventListener('click',function(){applyFix(f);});
+      li.appendChild(b);
+    }
+    list.appendChild(li);
+  });
+}
+
+/* ---------- drawing ---------- */
+var cv=$('cv'), cx=cv.getContext('2d'), W=0, H=0;
+var liveDb=null, liveCurve=new Float32Array(LP), eqDb=new Float32Array(LP), magB=new Float32Array(LP), phB=new Float32Array(LP);
+function sizeCanvas(){
+  var r=cv.getBoundingClientRect();if(r.width<10)return;
+  var dpr=Math.min(window.devicePixelRatio||1,2.5);
+  cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);
+  cx.setTransform(dpr,0,0,dpr,0,0);W=r.width;H=r.height;
+}
+function computeEq(){
+  eqDb.fill(0);if(!ch)return;
+  var nodes=[ch.lowcut,ch.bass].concat(ch.bands,[ch.treble]);
+  nodes.forEach(function(n){
+    n.getFrequencyResponse(freqs,magB,phB);
+    for(var i=0;i<LP;i++)eqDb[i]+=20*Math.log10(Math.max(magB[i],1e-6));
+  });
+}
+function draw(){
+  if(!W)return;
+  var cs=getComputedStyle(document.documentElement);
+  var C=function(n){return cs.getPropertyValue(n).trim();};
+  var padL=8,padR=30,padT=16,padB=20,pw=W-padL-padR,ph=H-padT-padB;
+  var LR=Math.log(FMAX/FMIN);
+  var X=function(f){return padL+Math.log(f/FMIN)/LR*pw;};
+  var Y=function(db){return padT+(1-(db-DBMIN)/(DBMAX-DBMIN))*ph;};
+  var cy=padT+ph*0.45, per=ph*0.36/15;
+  var EY=function(db){return cy-db*per;};
+  var yb=padT+ph;
+  var MONO='10px "JetBrains Mono",ui-monospace,monospace';
+  cx.clearRect(0,0,W,H);
+  cx.lineWidth=1;cx.font=MONO;
+  /* grid */
+  cx.strokeStyle=C('--line2');cx.fillStyle=C('--mute');cx.textAlign='center';
+  [[50,'50'],[100,'100'],[200,'200'],[500,'500'],[1000,'1k'],[2000,'2k'],[5000,'5k'],[10000,'10k'],[20000,'20k']].forEach(function(p){
+    var x=Math.round(X(p[0]))+0.5;
+    cx.beginPath();cx.moveTo(x,padT);cx.lineTo(x,yb);cx.stroke();
+    cx.fillText(p[1],Math.min(x,W-12),H-6);
+  });
+  /* eq dB axis */
+  cx.textAlign='left';cx.fillStyle=C('--accent');cx.setLineDash([2,4]);
+  [12,0,-12].forEach(function(d){
+    var y=Math.round(EY(d))+0.5;
+    cx.strokeStyle=C('--line');cx.beginPath();cx.moveTo(padL,y);cx.lineTo(padL+pw,y);cx.stroke();
+    cx.fillText(d>0?'+'+d:d<0?'−'+Math.abs(d):'0',padL+pw+5,y+3);
+  });
+  cx.setLineDash([]);
+  /* problem zones */
+  if(an){
+    an.findings.forEach(function(f){
+      if(f.sev==='good'||!f.zone)return;
+      var x0=X(Math.max(FMIN,f.zone[0])), x1=X(Math.min(FMAX,f.zone[1]));
+      var col=C(f.sev==='bad'?'--bad':'--warn');
+      cx.globalAlpha=0.13;cx.fillStyle=col;cx.fillRect(x0,padT,x1-x0,ph);
+      cx.globalAlpha=1;cx.fillStyle=col;cx.textAlign='left';cx.fillText(f.zl,x0+3,padT+10);
+    });
+  }
+  function trace(arr){
+    cx.beginPath();
+    for(var i=0;i<LP;i++){
+      var x=X(freqs[i]), y=clamp(Y(arr[i]),padT,yb);
+      if(i)cx.lineTo(x,y);else cx.moveTo(x,y);
+    }
+  }
+  /* original average */
+  if(an){
+    trace(an.curve);
+    cx.lineTo(X(FMAX),yb);cx.lineTo(X(FMIN),yb);cx.closePath();
+    cx.globalAlpha=0.18;cx.fillStyle=C('--ghost');cx.fill();
+    cx.globalAlpha=1;trace(an.curve);cx.strokeStyle=C('--ghost');cx.lineWidth=1.25;cx.stroke();
+  }
+  /* live */
+  if(playing&&analyser){
+    if(!liveDb)liveDb=new Float32Array(analyser.frequencyBinCount);
+    analyser.getFloatFrequencyData(liveDb);
+    logCurve(liveDb,ctx.sampleRate/N,liveCurve);
+    trace(liveCurve);
+    cx.lineTo(X(FMAX),yb);cx.lineTo(X(FMIN),yb);cx.closePath();
+    cx.globalAlpha=0.2;cx.fillStyle=C('--spec');cx.fill();
+    cx.globalAlpha=1;trace(liveCurve);cx.strokeStyle=C('--spec');cx.lineWidth=1.5;cx.stroke();
+  }
+  /* cutoff marker */
+  if(an&&an.cut){
+    var xc=Math.round(X(an.cut.f))+0.5;
+    cx.strokeStyle=C('--bad');cx.setLineDash([4,3]);cx.beginPath();cx.moveTo(xc,padT);cx.lineTo(xc,yb);cx.stroke();cx.setLineDash([]);
+  }
+  /* eq curve */
+  computeEq();
+  cx.lineWidth=2.2;cx.beginPath();
+  for(var i=0;i<LP;i++){
+    var x=X(freqs[i]), y=EY(st.bypass?0:clamp(eqDb[i],-24,24));
+    if(i)cx.lineTo(x,y);else cx.moveTo(x,y);
+  }
+  cx.strokeStyle=C('--accent');
+  if(st.bypass){cx.globalAlpha=0.5;cx.setLineDash([5,4]);}
+  cx.stroke();cx.setLineDash([]);cx.globalAlpha=1;
+  /* band dots */
+  if(!st.bypass){
+    cx.fillStyle=C('--panel');cx.strokeStyle=C('--accent');cx.lineWidth=1.5;
+    BANDS.forEach(function(f){
+      var best=0,bd=1e9;
+      for(var i=0;i<LP;i++){var d=Math.abs(Math.log(freqs[i]/f));if(d<bd){bd=d;best=i;}}
+      cx.beginPath();cx.arc(X(f),EY(clamp(eqDb[best],-24,24)),3.2,0,Math.PI*2);cx.fill();cx.stroke();
+    });
+  }
+}
+function frame(){
+  raf=0;draw();updateTime();
+  if(playing||performance.now()<drawUntil)raf=requestAnimationFrame(frame);
+}
+function requestDraw(ms){
+  if(ms)drawUntil=Math.max(drawUntil,performance.now()+ms);
+  if(!raf)raf=requestAnimationFrame(frame);
+}
+
+/* ---------- loading ---------- */
+function status(msg,err){var s=$('status');s.textContent=msg;s.classList.toggle('err',!!err);}
+function pause0(){return new Promise(function(r){setTimeout(r,30);});}
+async function setBuffer(b,name,label){
+  stopSrc();playing=false;offset=0;buf=b;
+  fileBase=(name||'gaana').replace(/\.[^.]+$/,'').replace(/[^\w\-]+/g,'_').slice(0,60)||'gaana';
+  $('fname').textContent=name;
+  $('fmeta').textContent=label+' · '+fmtT(b.duration)+' · '+(b.sampleRate/1000).toFixed(1)+' kHz';
+  $('tdur').textContent=fmtT(b.duration);$('tcur').textContent='0:00';$('seek').value='0';
+  status('Gaana check ho raha hai…');
+  await pause0();
+  an=analyze(b);
+  renderVerdict();updatePlayUI();
+  $('exportBtn').disabled=!dlCap;
+  if(an){status(an.score>=55?'Check ho gaya. Kaafi AI jaisi chhap mili, neeche fix suggestions dekho.':an.score>=25?'Check ho gaya. Kuch jagah AI wali chhap hai.':'Check ho gaya. Gaana kaafi natural lag raha hai.');}
+  else status('Gaana bahut chhota ya khaali hai, analysis nahi ho paya. EQ phir bhi use kar sakte ho.');
+  requestDraw(300);
+}
+async function loadFile(file){
+  if(!ctx){status('Is browser mein audio nahi chal sakta.',true);return;}
+  status('Gaana khul raha hai…');
+  try{
+    var ab=await file.arrayBuffer();
+    var b=await ctx.decodeAudioData(ab);
+    await setBuffer(b,file.name,'Tumhari file');
+  }catch(e){status('Yeh file khul nahi payi. MP3, WAV ya M4A try karo.',true);}
+}
+
+/* ---------- demo track ---------- */
+function brickwall(b,cutHz){
+  var len=b.length, n=1<<Math.ceil(Math.log2(len)), f=makeFFT(n), kc=Math.floor(cutHz/(b.sampleRate/n));
+  for(var c=0;c<b.numberOfChannels;c++){
+    var d=b.getChannelData(c), re=new Float64Array(n), im=new Float64Array(n);
+    re.set(d);f(re,im);
+    for(var k=kc;k<=n-kc;k++){re[k]=0;im[k]=0;}
+    for(var k2=0;k2<n;k2++)im[k2]=-im[k2];
+    f(re,im);
+    for(var i=0;i<len;i++)d[i]=re[i]/n;
+  }
+  var pk=0;
+  for(var c2=0;c2<b.numberOfChannels;c2++){var dd=b.getChannelData(c2);for(var i2=0;i2<len;i2++){var a=Math.abs(dd[i2]);if(a>pk)pk=a;}}
+  var g=pk>0?0.89/pk:1;
+  for(var c3=0;c3<b.numberOfChannels;c3++){var d3=b.getChannelData(c3);for(var i3=0;i3<len;i3++)d3[i3]*=g;}
+}
+async function makeDemo(){
+  var sr=ctx.sampleRate, beat=60/110, dur=beat*16;
+  var oc=new OfflineAudioContext(2,Math.ceil(sr*dur),sr);
+  var sum=oc.createGain();
+  var mud=oc.createBiquadFilter();mud.type='peaking';mud.frequency.value=280;mud.Q.value=0.9;mud.gain.value=6;
+  var harsh=oc.createBiquadFilter();harsh.type='peaking';harsh.frequency.value=4800;harsh.Q.value=0.9;harsh.gain.value=9;
+  var comp=oc.createDynamicsCompressor();
+  comp.threshold.value=-28;comp.knee.value=6;comp.ratio.value=14;comp.attack.value=0.003;comp.release.value=0.12;
+  sum.connect(mud);mud.connect(harsh);harsh.connect(comp);comp.connect(oc.destination);
+  var bassLP=oc.createBiquadFilter();bassLP.type='lowpass';bassLP.frequency.value=320;bassLP.connect(sum);
+  function tone(dest,type,freq,t,d,peak,o){
+    o=o||{};var att=o.att||0.01, rel=o.rel||0.1;
+    var osc=oc.createOscillator();osc.type=type;osc.frequency.value=freq;osc.detune.value=o.detune||0;
+    var g=oc.createGain();
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+att);
+    g.gain.setValueAtTime(peak,t+Math.max(att,d-rel));g.gain.linearRampToValueAtTime(0,t+d);
+    osc.connect(g);var out=g;
+    if(o.pan){var p=oc.createStereoPanner();p.pan.value=o.pan;g.connect(p);out=p;}
+    out.connect(dest);osc.start(t);osc.stop(t+d+0.05);
+  }
+  var nb=oc.createBuffer(1,sr,sr), nd=nb.getChannelData(0);
+  for(var i=0;i<sr;i++)nd[i]=Math.random()*2-1;
+  for(var b=0;b<16;b++){
+    var t=b*beat;
+    var ko=oc.createOscillator();ko.type='sine';ko.frequency.setValueAtTime(140,t);ko.frequency.exponentialRampToValueAtTime(48,t+0.14);
+    var kg=oc.createGain();kg.gain.setValueAtTime(0.0001,t);kg.gain.linearRampToValueAtTime(0.8,t+0.004);kg.gain.exponentialRampToValueAtTime(0.001,t+0.3);
+    ko.connect(kg);kg.connect(sum);ko.start(t);ko.stop(t+0.35);
+    var th=t+beat/2;
+    var hs=oc.createBufferSource();hs.buffer=nb;
+    var hp=oc.createBiquadFilter();hp.type='highpass';hp.frequency.value=7000;
+    var hg=oc.createGain();hg.gain.setValueAtTime(0.22,th);hg.gain.exponentialRampToValueAtTime(0.001,th+0.07);
+    var hpn=oc.createStereoPanner();hpn.pan.value=0.3;
+    hs.connect(hp);hp.connect(hg);hg.connect(hpn);hpn.connect(sum);hs.start(th,Math.random()*0.5,0.09);
+  }
+  var roots=[55,43.65,65.41,49];
+  for(var e=0;e<32;e++){
+    var r=roots[Math.floor(e/8)%4], m=[1,1,2,1,1,2,1,1.5][e%8];
+    tone(bassLP,'sawtooth',r*m,e*beat/2,beat*0.45,0.3,{att:0.005,rel:0.08});
+  }
+  var chords=[[220,261.63,329.63],[174.61,220,261.63],[261.63,329.63,392],[196,246.94,293.66]];
+  chords.forEach(function(cd,bar){
+    cd.forEach(function(fq){
+      tone(sum,'sawtooth',fq,bar*4*beat,4*beat,0.06,{att:0.05,rel:0.2,detune:-9,pan:-0.5});
+      tone(sum,'sawtooth',fq,bar*4*beat,4*beat,0.06,{att:0.05,rel:0.2,detune:9,pan:0.5});
+    });
+  });
+  var mel=[659.25,783.99,880,783.99,698.46,880,1046.5,880,783.99,659.25,783.99,1046.5,987.77,783.99,659.25,587.33];
+  mel.forEach(function(fq,i){tone(sum,'sawtooth',fq,i*beat,beat*0.8,0.09,{att:0.005,rel:0.25,pan:0.2});});
+  var out=await oc.startRendering();
+  brickwall(out,16000);
+  return out;
+}
+async function loadDemo(){
+  if(!ctx){status('Is browser mein audio nahi chal sakta.',true);return;}
+  status('Demo gaana ban raha hai…');
+  await pause0();
+  try{
+    var b=await makeDemo();
+    await setBuffer(b,'Demo gaana','Sample, jaan-boojh kar AI jaisi kamiyan');
+  }catch(e){status('Demo nahi ban paya. Apna gaana chuno.',true);}
+}
+
+/* ---------- export (WAV inside a zip) ---------- */
+var crcT=null;
+function crc32(u8){
+  if(!crcT){crcT=new Uint32Array(256);for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;crcT[n]=c>>>0;}}
+  var crc=0xFFFFFFFF;
+  for(var i=0;i<u8.length;i++)crc=crcT[(crc^u8[i])&255]^(crc>>>8);
+  return (crc^0xFFFFFFFF)>>>0;
+}
+function wavBytes(ab){
+  var nch=ab.numberOfChannels, len=ab.length, sr=ab.sampleRate, bytes=len*nch*2;
+  var out=new ArrayBuffer(44+bytes), v=new DataView(out);
+  function ws(o,s){for(var i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));}
+  ws(0,'RIFF');v.setUint32(4,36+bytes,true);ws(8,'WAVE');ws(12,'fmt ');v.setUint32(16,16,true);
+  v.setUint16(20,1,true);v.setUint16(22,nch,true);v.setUint32(24,sr,true);v.setUint32(28,sr*nch*2,true);
+  v.setUint16(32,nch*2,true);v.setUint16(34,16,true);ws(36,'data');v.setUint32(40,bytes,true);
+  var cd=[];for(var c=0;c<nch;c++)cd.push(ab.getChannelData(c));
+  var o=44;
+  for(var i=0;i<len;i++){for(var c2=0;c2<nch;c2++){var s=clamp(cd[c2][i],-1,1);v.setInt16(o,s<0?s*32768:s*32767,true);o+=2;}}
+  return new Uint8Array(out);
+}
+function zipStore(name,data){
+  var enc=new TextEncoder().encode(name), crc=crc32(data), size=data.length;
+  var now=new Date(), time=(now.getHours()<<11)|(now.getMinutes()<<5)|(now.getSeconds()>>1);
+  var date=((now.getFullYear()-1980)<<9)|((now.getMonth()+1)<<5)|now.getDate();
+  var lh=new DataView(new ArrayBuffer(30));
+  lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(8,0,true);
+  lh.setUint16(10,time,true);lh.setUint16(12,date,true);lh.setUint32(14,crc,true);lh.setUint32(18,size,true);
+  lh.setUint32(22,size,true);lh.setUint16(26,enc.length,true);lh.setUint16(28,0,true);
+  var cdh=new DataView(new ArrayBuffer(46));
+  cdh.setUint32(0,0x02014b50,true);cdh.setUint16(4,20,true);cdh.setUint16(6,20,true);cdh.setUint16(8,0x0800,true);
+  cdh.setUint16(10,0,true);cdh.setUint16(12,time,true);cdh.setUint16(14,date,true);cdh.setUint32(16,crc,true);
+  cdh.setUint32(20,size,true);cdh.setUint32(24,size,true);cdh.setUint16(28,enc.length,true);
+  cdh.setUint16(30,0,true);cdh.setUint16(32,0,true);cdh.setUint16(34,0,true);cdh.setUint16(36,0,true);
+  cdh.setUint32(38,0,true);cdh.setUint32(42,0,true);
+  var cdSize=46+enc.length, cdOff=30+enc.length+size;
+  var eo=new DataView(new ArrayBuffer(22));
+  eo.setUint32(0,0x06054b50,true);eo.setUint16(4,0,true);eo.setUint16(6,0,true);eo.setUint16(8,1,true);
+  eo.setUint16(10,1,true);eo.setUint32(12,cdSize,true);eo.setUint32(16,cdOff,true);eo.setUint16(20,0,true);
+  return new Blob([lh,enc,data,cdh,enc,eo],{type:'application/zip'});
+}
+async function exportFile(){
+  if(!buf||!dlCap||busy)return;
+  busy=true;var btn=$('exportBtn');btn.disabled=true;
+  status('EQ ke saath gaana render ho raha hai…');
+  await pause0();
+  try{
+    var nch=Math.min(2,buf.numberOfChannels);
+    var oc=new OfflineAudioContext(nch,buf.length,buf.sampleRate);
+    var c2=makeChain(oc);
+    c2.bands.forEach(function(f,i){f.gain.value=st.gains[i];});
+    c2.bass.gain.value=st.bass;c2.treble.gain.value=st.treble;c2.lowcut.frequency.value=Math.max(st.lowcut,5);
+    var vg=oc.createGain();vg.gain.value=Math.pow(10,st.vol/20);
+    var s=oc.createBufferSource();s.buffer=buf;s.connect(c2.head);c2.tail.connect(vg);vg.connect(oc.destination);s.start(0);
+    var rendered=await oc.startRendering();
+    status('File pack ho rahi hai…');
+    await pause0();
+    var wav=wavBytes(rendered);
+    var r;
+    if(standalone){
+      r=await dlCap.save({filename:fileBase+'-eq.wav',data:new Blob([wav],{type:'audio/wav'})});
+      status('Save ho gaya: '+fileBase+'-eq.wav');
+    }else{
+      var blob=zipStore(fileBase+'-eq.wav',wav);
+      r=await dlCap.save({filename:fileBase+'-eq.zip',data:blob});
+      status(r&&r.status==='saved'?'Save ho gaya. Zip ke andar '+fileBase+'-eq.wav hai.':'File bhej di gayi.');
+    }
+  }catch(e){
+    var code=e&&e.code;
+    status(code==='declined'?'Save cancel ho gaya.':'Save nahi ho paya. Dobara try karo.',code!=='declined');
+  }
+  busy=false;btn.disabled=!buf;
+}
+
+/* ---------- wiring ---------- */
+function wire(){
+  buildEq();buildPresets();
+  $('play').addEventListener('click',function(){playing?pause():play();});
+  $('loopBtn').addEventListener('click',function(){
+    loop=!loop;$('loopBtn').setAttribute('aria-pressed',String(loop));
+    if(playing){offset=pos();play();}
+  });
+  $('seek').addEventListener('input',function(){
+    if(!buf)return;
+    offset=parseFloat($('seek').value)/1000*buf.duration;
+    $('tcur').textContent=fmtT(offset);
+    if(playing)play();
+  });
+  $('abOrig').addEventListener('click',function(){setBypass(true);});
+  $('abEq').addEventListener('click',function(){setBypass(false);});
+  $('resetBtn').addEventListener('click',function(){resetAll();status('EQ reset ho gaya.');});
+  $('autoFix').addEventListener('click',autoFixAll);
+  $('demoBtn').addEventListener('click',function(){pause();loadDemo();});
+  $('exportBtn').addEventListener('click',exportFile);
+  $('file').addEventListener('change',function(e){var f=e.target.files&&e.target.files[0];if(f){pause();loadFile(f);}e.target.value='';});
+  var dz=$('dz');
+  ['dragenter','dragover'].forEach(function(t){dz.addEventListener(t,function(e){e.preventDefault();dz.classList.add('drag');});});
+  ['dragleave','drop'].forEach(function(t){dz.addEventListener(t,function(e){e.preventDefault();dz.classList.remove('drag');});});
+  dz.addEventListener('drop',function(e){var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f){pause();loadFile(f);}});
+  if(window.ResizeObserver){new ResizeObserver(function(){sizeCanvas();requestDraw();}).observe(cv.parentElement);}
+  else window.addEventListener('resize',function(){sizeCanvas();requestDraw();});
+  try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){requestDraw();});}catch(e){}
+  try{new MutationObserver(function(){requestDraw();}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});}catch(e){}
+  /* downloads capability (optional) */
+  try{
+    if(window.claude&&window.claude.use){
+      window.claude.use('downloads').then(function(d){
+        dlCap=d||null;
+        if(!dlCap){$('exportBtn').hidden=true;$('expNote').textContent='Is view mein file save nahi ho sakti. Claude app ya claude.ai mein page kholo.';}
+        else $('exportBtn').disabled=!buf;
+      }).catch(function(){dlCap=null;$('exportBtn').hidden=true;});
+    }else{standalone=true;dlCap={save:function(r){var a=document.createElement('a'),u=URL.createObjectURL(r.data);a.href=u;a.download=r.filename;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},5000);return Promise.resolve({status:'saved'});}};$('exportBtn').disabled=!buf;$('expNote').textContent='Gaana WAV file ki tarah seedha download hoga.';}
+  }catch(e){$('exportBtn').hidden=true;}
+  sizeCanvas();updatePlayUI();renderVerdict();requestDraw(300);
+  if(initAudio()){loadDemo();}
+  else status('Is browser mein audio nahi chal sakta.',true);
+}
+wire();
+})();
+</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
+</body>
+</html>
