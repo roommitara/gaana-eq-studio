@@ -1,5 +1,5 @@
 /* Offline cache for Gaana EQ Studio. Bump CACHE when index.html changes. */
-var CACHE = 'gaana-eq-v2';
+var CACHE = 'gaana-eq-v3';
 var ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './icon.svg'];
 
 self.addEventListener('install', function (e) {

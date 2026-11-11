@@ -4,7 +4,7 @@ AI se bana gaana (Suno jaisa) chuno, dekho kahan AI jaisi kamiyan hain, phir bas
 
 - **AI-feel check:** 16 kHz par awaaz ka kat jana, tez 3–8 kHz, bhaari beech ki awaaz, patla bass, dabi dynamics aur stereo spread. Yeh sirf awaaz ke patterns se andaza hai, pakka saboot nahi.
 - **Fix:** har problem ke liye ek button, aur "Sab auto-fix lagao".
-- **Studio Master:** ek click mein tone, tez awaaz, bass, upar ki hawa, garmi, stereo, halka room aur loudness theek hote hain. Asar slider aur loudness target (original jitna, -14 ya -10 LUFS) tum chuno. Master ke baad AI-feel score dobara naapa jata hai aur "Original" aur "Studio Master" ka A/B hota hai. Yeh asli studio recording nahi banata: robotic vocal, galat notes aur kharab mix theek nahi hote, aur kati hui upar ki awaaz poori wapas nahi aati.
+- **Studio Master:** ek click mein tone, tez awaaz, bass, upar ki hawa, garmi, stereo, halka room aur loudness theek hote hain. "Kaanch hatane ka zor" slider tez 3–8 kHz ko do hisson mein dabata hai aur chubhti hui narrow awaazon ko kaat deta hai. Asar slider aur loudness target (original jitna, -14 ya -10 LUFS) tum chuno. Master ke baad AI-feel score dobara naapa jata hai aur "Original" aur "Studio Master" ka A/B hota hai. Yeh asli studio recording nahi banata: robotic vocal, galat notes aur kharab mix theek nahi hote, aur kati hui upar ki awaaz poori wapas nahi aati.
 - **Apni marzi:** Bass, Treble, Volume, Low cut aur 10-band EQ. "Original" aur "EQ ke saath" se A/B compare karo.
 - **Save:** EQ wala gaana WAV file ki tarah download hota hai.
 
