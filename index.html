@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0F1416">
-<meta name="description" content="AI gaane ki kamiyan dekho aur bass aur 10-band EQ se apni marzi se set karo.">
+<meta name="description" content="AI gaane ki kamiyan dekho, Studio Master lagao aur bass aur 10-band EQ se apni marzi se set karo.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -19,7 +19,7 @@
    Wide screens put the verdict beside the spectrum. Panels are flat, console-like, no shadows. */
 :root{
   --bg:#E7EAE6; --panel:#F3F5F1; --ink:#162124; --mute:#566568; --line:#C6CEC9; --line2:#DCE2DD;
-  --accent:#2748E8; --accent-ink:#FFFFFF; --spec:#13826F; --ghost:#7C8A8D;
+  --accent:#2748E8; --accent-ink:#FFFFFF; --spec:#13826F; --ghost:#7C8A8D; --master:#B8530A;
   --good:#1B7F47; --warn:#A86A0B; --bad:#BE3A27;
   --good-bg:rgba(27,127,71,.13); --warn-bg:rgba(168,106,11,.15); --bad-bg:rgba(190,58,39,.14);
   --f-display:"Space Grotesk",system-ui,sans-serif;
@@ -29,7 +29,7 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0F1416; --panel:#161D20; --ink:#E4EBE8; --mute:#8A9A9D; --line:#2B363A; --line2:#222C2F;
-    --accent:#8AA0FF; --accent-ink:#0B1233; --spec:#3FBFA8; --ghost:#6F7E82;
+    --accent:#8AA0FF; --accent-ink:#0B1233; --spec:#3FBFA8; --ghost:#6F7E82; --master:#F2A164;
     --good:#4CC38A; --warn:#E3A94B; --bad:#F0715E;
     --good-bg:rgba(76,195,138,.15); --warn-bg:rgba(227,169,75,.16); --bad-bg:rgba(240,113,94,.16);
     color-scheme:dark;
@@ -37,7 +37,7 @@
 }
 :root[data-theme="dark"]{
   --bg:#0F1416; --panel:#161D20; --ink:#E4EBE8; --mute:#8A9A9D; --line:#2B363A; --line2:#222C2F;
-  --accent:#8AA0FF; --accent-ink:#0B1233; --spec:#3FBFA8; --ghost:#6F7E82;
+  --accent:#8AA0FF; --accent-ink:#0B1233; --spec:#3FBFA8; --ghost:#6F7E82; --master:#F2A164;
   --good:#4CC38A; --warn:#E3A94B; --bad:#F0715E;
   --good-bg:rgba(76,195,138,.15); --warn-bg:rgba(227,169,75,.16); --bad-bg:rgba(240,113,94,.16);
   color-scheme:dark;
@@ -53,10 +53,10 @@ body{
 h1{font:600 26px/1.15 var(--f-display);letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance}
 .sub{margin:0 0 16px;color:var(--mute);max-width:60ch;text-wrap:pretty}
 .layout{display:grid;gap:12px;grid-template-columns:minmax(0,1fr);
-  grid-template-areas:"load" "an" "ve" "eq" "ex"}
-.a-load{grid-area:load}.a-an{grid-area:an}.a-ve{grid-area:ve}.a-eq{grid-area:eq}.a-ex{grid-area:ex}
+  grid-template-areas:"load" "an" "ve" "sm" "eq" "ex"}
+.a-load{grid-area:load}.a-an{grid-area:an}.a-ve{grid-area:ve}.a-eq{grid-area:eq}.a-ex{grid-area:ex}.a-sm{grid-area:sm}
 @media (min-width:960px){
-  .layout{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);grid-template-areas:"load load" "an ve" "eq ex";align-items:start}
+  .layout{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);grid-template-areas:"load load" "an ve" "sm sm" "eq ex";align-items:start}
 }
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 14px 16px;min-width:0}
 .head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
@@ -151,7 +151,25 @@ details p{margin:8px 0 0;text-wrap:pretty}
 .band .bv.on{color:var(--accent)}
 .band .bl{font:500 11px var(--f-mono);color:var(--ink)}
 .expnote{color:var(--mute);font-size:12px;margin:10px 0 0;text-wrap:pretty}
-@media (prefers-reduced-motion:reduce){.score .meter div{transition:none}}
+.sm-lead{margin:0 0 14px;color:var(--mute);max-width:64ch;text-wrap:pretty}
+.sm-ctl{display:grid;gap:14px 24px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));margin-bottom:14px}
+.sm-ctl>div{min-width:0}
+.sm-ctl .lbl{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:500;margin-bottom:6px}
+.sm-ctl .lbl output{font:500 12px var(--f-mono);color:var(--accent)}
+.sm-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center}
+.sm-actions .btn.primary{min-height:46px;padding:0 20px;font-size:15px}
+.prog{height:6px;border-radius:3px;background:var(--line2);overflow:hidden;margin-top:14px}
+.prog div{height:100%;width:0;background:var(--accent);transition:width .3s ease}
+.sm-result{margin-top:14px;border-top:1px solid var(--line2);padding-top:14px;display:grid;gap:12px}
+.cmp{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kv{display:grid;gap:2px;min-width:0}
+.kv .k{font:600 11px/1.2 var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}
+.kv .v{font-size:22px;line-height:1.25}
+.sm-result .finds{margin:0}
+.sm-result .finds li{padding:8px 0}
+details ul{margin:8px 0 0;padding-left:18px}
+details li{margin:3px 0}
+@media (prefers-reduced-motion:reduce){.score .meter div,.prog div{transition:none}}
 </style>
 
 </head>
@@ -184,6 +202,7 @@ details p{margin:8px 0 0;text-wrap:pretty}
       <div class="legend">
         <span><i class="fill"></i>Original (average)</span>
         <span><i style="border-color:var(--spec)"></i>Abhi (live)</span>
+        <span id="legM" hidden><i style="border-color:var(--master);border-top-style:dashed"></i>Studio Master (average)</span>
         <span><i style="border-color:var(--accent)"></i>EQ curve</span>
       </div>
       <div class="transport">
@@ -207,6 +226,41 @@ details p{margin:8px 0 0;text-wrap:pretty}
       <details>
         <summary>Yeh kaise nikalta hai?</summary>
         <p>Gaane ke average spectrum ko ek aam, balanced master se compare kiya jata hai. 3–8 kHz ka zyada hona, 16 kHz par awaaz kat jana, dabi hui dynamics aur dhundhli beech ki awaaz AI gaano mein aam milte hain. Yeh sirf awaaz ke patterns se andaza hai, pakka saboot nahi. Bass-heavy genre mein bass wali line ko ignore kar sakte ho.</p>
+      </details>
+    </section>
+
+    <section class="panel a-sm" aria-label="Studio Master">
+      <div class="head"><span class="eyebrow">Studio Master</span></div>
+      <p class="sm-lead">Ek click mein tone, tez awaaz, bass, upar ki hawa, stereo aur loudness ek mastering studio jaisi theek hoti hai. Uske baad bass aur EQ apni marzi se badal sakte ho.</p>
+      <div class="sm-ctl">
+        <div>
+          <div class="lbl"><label for="smAmt">Kitna asar</label><output id="smAmtOut" class="mono">70%</output></div>
+          <input id="smAmt" class="h" type="range" min="0" max="100" step="5" value="70">
+        </div>
+        <div>
+          <div class="lbl"><span id="smLoudLbl">Loudness</span></div>
+          <div class="seg" id="smLoud" role="group" aria-labelledby="smLoudLbl"></div>
+        </div>
+      </div>
+      <div class="presets" id="smStages" role="group" aria-label="Kya kya lagana hai"></div>
+      <div class="sm-actions">
+        <button class="btn primary" id="smGo" type="button" disabled>Studio Master lagao</button>
+        <button class="btn" id="smOff" type="button" disabled>Master hatao</button>
+      </div>
+      <div class="prog" id="smProg" hidden><div id="smProgBar"></div></div>
+      <div class="sm-result" id="smResult" hidden></div>
+      <details>
+        <summary>Yeh kya karta hai aur kya nahi?</summary>
+        <ul>
+          <li>Tone theek: gaane ka sur-balance ek achhe master jaisa karta hai, aur neeche ki gunj hataata hai.</li>
+          <li>Tez awaaz kam: 3.6 kHz ke upar awaaz jab kaanch jaisi chubhti hai, sirf tabhi use dabata hai.</li>
+          <li>Bass tight: bass jhoolta ho to use kasta hai.</li>
+          <li>Upar ki hawa: kati hui awaaz ke upar halka air jodta hai.</li>
+          <li>Garmi: halki analog jaisi saturation, jisse awaaz bhari lagti hai.</li>
+          <li>Stereo: chaudai badhata hai aur bass beech mein rakhta hai.</li>
+          <li>Studio room: bahut halka room reverb, jisse sab ek hi kamre ki awaaz lagti hai.</li>
+        </ul>
+        <p>Yeh asli studio recording nahi banata. Robotic vocal, galat notes aur kharab mix ye theek nahi kar sakta. Kati hui upar ki awaaz bhi poori wapas nahi aati. Master hone mein kuch second se ek-do minute lagte hain, gaane ki lambai par depend karta hai.</p>
       </details>
     </section>
 
@@ -239,7 +293,8 @@ var N=8192, LP=220, FMIN=20, FMAX=20000, DBMIN=-105, DBMAX=-25;
 var st={gains:[0,0,0,0,0,0,0,0,0,0],bass:0,treble:0,vol:0,lowcut:0,bypass:false};
 var ctx=null, ch=null, dry=null, wet=null, analyser=null, input=null;
 var buf=null, src=null, playing=false, startedAt=0, offset=0, loop=true, an=null;
-var fileBase='gaana', raf=0, drawUntil=0, dlCap=null, busy=false, standalone=false;
+var fileBase='gaana', raf=0, drawUntil=0, dlCap=null, busy=false;
+var mbuf=null, anM=null, mInfo=null, mBusy=false;
 var freqs=new Float32Array(LP);
 for(var q=0;q<LP;q++){freqs[q]=FMIN*Math.pow(FMAX/FMIN,q/(LP-1));}
 var clamp=function(v,a,b){return Math.max(a,Math.min(b,v));};
@@ -454,6 +509,7 @@ function applyAudio(imm){
 }
 
 /* ---------- player ---------- */
+function sourceBuf(){return (!st.bypass&&mbuf)?mbuf:buf;}
 function pos(){
   if(!buf)return 0;
   if(!playing)return offset;
@@ -468,7 +524,7 @@ async function play(){
   if(!buf||!ctx)return;
   try{await ctx.resume();}catch(e){}
   stopSrc();
-  var s=ctx.createBufferSource();s.buffer=buf;s.loop=loop;s.connect(input);
+  var s=ctx.createBufferSource();s.buffer=sourceBuf();s.loop=loop;s.connect(input);
   var o=clamp(offset,0,Math.max(0,buf.duration-0.02));
   s.start(0,o);startedAt=ctx.currentTime-o;src=s;playing=true;
   s.onended=function(){if(src===s){playing=false;src=null;offset=0;updatePlayUI();updateTime();requestDraw();}};
@@ -520,6 +576,7 @@ function setBypass(b){
   $('abOrig').setAttribute('aria-pressed',String(b));
   $('abEq').setAttribute('aria-pressed',String(!b));
   pushState();
+  if(playing&&mbuf){offset=pos();play();}
 }
 function buildEq(){
   var bw=$('bands');
@@ -688,6 +745,9 @@ function draw(){
     cx.globalAlpha=0.18;cx.fillStyle=C('--ghost');cx.fill();
     cx.globalAlpha=1;trace(an.curve);cx.strokeStyle=C('--ghost');cx.lineWidth=1.25;cx.stroke();
   }
+  if(anM&&!st.bypass){
+    trace(anM.curve);cx.strokeStyle=C('--master');cx.lineWidth=1.5;cx.setLineDash([6,3]);cx.stroke();cx.setLineDash([]);
+  }
   /* live */
   if(playing&&analyser){
     if(!liveDb)liveDb=new Float32Array(analyser.frequencyBinCount);
@@ -736,7 +796,7 @@ function requestDraw(ms){
 function status(msg,err){var s=$('status');s.textContent=msg;s.classList.toggle('err',!!err);}
 function pause0(){return new Promise(function(r){setTimeout(r,30);});}
 async function setBuffer(b,name,label){
-  stopSrc();playing=false;offset=0;buf=b;
+  stopSrc();playing=false;offset=0;buf=b;clearMaster();
   fileBase=(name||'gaana').replace(/\.[^.]+$/,'').replace(/[^\w\-]+/g,'_').slice(0,60)||'gaana';
   $('fname').textContent=name;
   $('fmeta').textContent=label+' · '+fmtT(b.duration)+' · '+(b.sampleRate/1000).toFixed(1)+' kHz';
@@ -744,7 +804,7 @@ async function setBuffer(b,name,label){
   status('Gaana check ho raha hai…');
   await pause0();
   an=analyze(b);
-  renderVerdict();updatePlayUI();
+  renderVerdict();updatePlayUI();smEnable();
   $('exportBtn').disabled=!dlCap;
   if(an){status(an.score>=55?'Check ho gaya. Kaafi AI jaisi chhap mili, neeche fix suggestions dekho.':an.score>=25?'Check ho gaya. Kuch jagah AI wali chhap hai.':'Check ho gaya. Gaana kaafi natural lag raha hai.');}
   else status('Gaana bahut chhota ya khaali hai, analysis nahi ho paya. EQ phir bhi use kar sakte ho.');
@@ -884,25 +944,26 @@ async function exportFile(){
   status('EQ ke saath gaana render ho raha hai…');
   await pause0();
   try{
-    var nch=Math.min(2,buf.numberOfChannels);
-    var oc=new OfflineAudioContext(nch,buf.length,buf.sampleRate);
+    var sb=mbuf||buf,tag=mbuf?'-studio':'-eq';
+    var nch=Math.min(2,sb.numberOfChannels);
+    var oc=new OfflineAudioContext(nch,sb.length,sb.sampleRate);
     var c2=makeChain(oc);
     c2.bands.forEach(function(f,i){f.gain.value=st.gains[i];});
     c2.bass.gain.value=st.bass;c2.treble.gain.value=st.treble;c2.lowcut.frequency.value=Math.max(st.lowcut,5);
     var vg=oc.createGain();vg.gain.value=Math.pow(10,st.vol/20);
-    var s=oc.createBufferSource();s.buffer=buf;s.connect(c2.head);c2.tail.connect(vg);vg.connect(oc.destination);s.start(0);
+    var s=oc.createBufferSource();s.buffer=sb;s.connect(c2.head);c2.tail.connect(vg);vg.connect(oc.destination);s.start(0);
     var rendered=await oc.startRendering();
     status('File pack ho rahi hai…');
     await pause0();
     var wav=wavBytes(rendered);
     var r;
-    if(standalone){
-      r=await dlCap.save({filename:fileBase+'-eq.wav',data:new Blob([wav],{type:'audio/wav'})});
-      status('Save ho gaya: '+fileBase+'-eq.wav');
+    if(dlCap.direct){
+      r=await dlCap.save({filename:fileBase+tag+'.wav',data:new Blob([wav],{type:'audio/wav'})});
+      status('Save ho gaya: '+fileBase+tag+'.wav');
     }else{
-      var blob=zipStore(fileBase+'-eq.wav',wav);
-      r=await dlCap.save({filename:fileBase+'-eq.zip',data:blob});
-      status(r&&r.status==='saved'?'Save ho gaya. Zip ke andar '+fileBase+'-eq.wav hai.':'File bhej di gayi.');
+      var blob=zipStore(fileBase+tag+'.wav',wav);
+      r=await dlCap.save({filename:fileBase+tag+'.zip',data:blob});
+      status(r&&r.status==='saved'?'Save ho gaya. Zip ke andar '+fileBase+tag+'.wav hai.':'File bhej di gayi.');
     }
   }catch(e){
     var code=e&&e.code;
@@ -911,9 +972,387 @@ async function exportFile(){
   busy=false;btn.disabled=!buf;
 }
 
+/* ---------- Studio Master ---------- */
+var SM={amt:0.7,loud:'orig',stages:{tone:true,harsh:true,bass:true,air:true,warm:true,stereo:true,room:true}};
+var SM_STAGES=[['tone','Tone theek'],['harsh','Tez awaaz kam'],['bass','Bass tight'],['air','Upar ki hawa'],['warm','Garmi'],['stereo','Stereo'],['room','Studio room']];
+var SM_LOUD=[['orig','Original jitna'],['-14','−14 LUFS'],['-10','−10 LUFS']];
+var XO1=180, XO2=3600;
+
+function rbjCoef(type,f0,Q,gDb,sr){
+  var w=2*Math.PI*f0/sr,c=Math.cos(w),s=Math.sin(w),al=s/(2*Q),A=Math.pow(10,gDb/40),b0,b1,b2,a0,a1,a2;
+  if(type==='hp'){b0=(1+c)/2;b1=-(1+c);b2=(1+c)/2;a0=1+al;a1=-2*c;a2=1-al;}
+  else{
+    var sq=2*Math.sqrt(A)*al;
+    b0=A*((A+1)+(A-1)*c+sq);b1=-2*A*((A-1)+(A+1)*c);b2=A*((A+1)+(A-1)*c-sq);
+    a0=(A+1)-(A-1)*c+sq;a1=2*((A-1)-(A+1)*c);a2=(A+1)-(A-1)*c-sq;
+  }
+  return [b0/a0,b1/a0,b2/a0,a1/a0,a2/a0];
+}
+/* BS.1770 style loudness (K-weighted, gated), in LUFS */
+function kLoud(b){
+  var sr=b.sampleRate,n=b.length,nc=Math.min(b.numberOfChannels,2);
+  var sh=rbjCoef('hs',1681.974450955533,0.7071752369554196,3.999843853973347,sr);
+  var hp=rbjCoef('hp',38.13547087602444,0.5003270373238773,0,sr);
+  var seg=Math.round(sr*0.1),nseg=Math.floor(n/seg),sums=new Float64Array(Math.max(nseg,1));
+  for(var c=0;c<nc;c++){
+    var x=b.getChannelData(c),x1=0,x2=0,y1=0,y2=0,u1=0,u2=0,v1=0,v2=0;
+    for(var k=0;k<nseg;k++){
+      var acc=0,i0=k*seg,i1=i0+seg;
+      for(var i=i0;i<i1;i++){
+        var xi=x[i];
+        var y=sh[0]*xi+sh[1]*x1+sh[2]*x2-sh[3]*y1-sh[4]*y2;x2=x1;x1=xi;y2=y1;y1=y;
+        var z=hp[0]*y+hp[1]*u1+hp[2]*u2-hp[3]*v1-hp[4]*v2;u2=u1;u1=y;v2=v1;v1=z;
+        acc+=z*z;
+      }
+      sums[k]+=acc;
+    }
+  }
+  var ms=[];
+  for(var k2=0;k2+4<=nseg;k2++){ms.push((sums[k2]+sums[k2+1]+sums[k2+2]+sums[k2+3])/(4*seg));}
+  var db=function(v){return -0.691+10*Math.log10(v+1e-12);};
+  var g1=ms.filter(function(v){return db(v)>-70;});
+  if(!g1.length)return -70;
+  var m1=g1.reduce(function(a,v){return a+v;},0)/g1.length,rel=db(m1)-10;
+  var g2=g1.filter(function(v){return db(v)>rel;});
+  if(!g2.length)return db(m1);
+  return db(g2.reduce(function(a,v){return a+v;},0)/g2.length);
+}
+function rmsDb(d){var s=0,n=d.length;for(var i=0;i<n;i++)s+=d[i]*d[i];return 10*Math.log10(s/Math.max(n,1)+1e-12);}
+
+/* gain-reduction envelope (linear gain per sample) from a mono detector band */
+function gainEnv(d,sr,p){
+  var n=d.length,g=new Float32Array(n);
+  var ca=Math.exp(-1/(sr*p.att/1000)),cr=Math.exp(-1/(sr*p.rel/1000)),ck=Math.exp(-1/(sr*p.hold/1000));
+  var k=Math.max(p.knee,1),sl=1-1/p.ratio,th=p.th,gr=0,e=0;
+  for(var i=0;i<n;i++){
+    var a=d[i];if(a<0)a=-a;
+    e=a>e?a:e*ck;
+    var ov=20*Math.log10(e+1e-7)-th,gc;
+    if(2*ov<-k)gc=0;
+    else if(2*Math.abs(ov)<=k){var t=ov+k/2;gc=sl*t*t/(2*k);}
+    else gc=sl*ov;
+    if(gc>p.maxGR)gc=p.maxGR;
+    gr=gc>gr?ca*gr+(1-ca)*gc:cr*gr+(1-cr)*gc;
+    g[i]=Math.pow(10,-gr/20);
+  }
+  return g;
+}
+function satCurve(d){var n=4097,c=new Float32Array(n);for(var i=0;i<n;i++){var x=i/(n-1)*2-1;c[i]=Math.tanh(d*x)/d;}return c;}
+
+/* look-ahead peak limiter, offline, no latency */
+function limitBuf(b,ceil){
+  var n=b.length,sr=b.sampleRate,L=b.getChannelData(0),R=b.numberOfChannels>1?b.getChannelData(1):L;
+  var pk=0;
+  for(var i=0;i<n;i++){var a=Math.abs(L[i]),c=Math.abs(R[i]);if(a>pk)pk=a;if(c>pk)pk=c;}
+  if(pk<=ceil)return;
+  var W=Math.max(8,Math.round(sr*0.0015)),need=new Float32Array(n);
+  for(var i2=0;i2<n;i2++){var m=Math.max(Math.abs(L[i2]),Math.abs(R[i2]));need[i2]=m>ceil?ceil/m:1;}
+  var size=2*W+4,dq=new Int32Array(size),head=0,tail=0,cnt=0,nxt=0,mn=new Float32Array(n);
+  for(var i3=0;i3<n;i3++){
+    var lim=Math.min(n-1,i3+W);
+    while(nxt<=lim){
+      var v=need[nxt];
+      while(cnt>0&&need[dq[(tail-1+size)%size]]>=v){tail=(tail-1+size)%size;cnt--;}
+      dq[tail]=nxt;tail=(tail+1)%size;cnt++;nxt++;
+    }
+    while(dq[head]<i3-W){head=(head+1)%size;cnt--;}
+    mn[i3]=need[dq[head]];
+  }
+  var sum=0,cb=0;
+  for(var j=0;j<=Math.min(W,n-1);j++){sum+=mn[j];cb++;}
+  for(var i4=0;i4<n;i4++){
+    var gn=sum/cb;
+    L[i4]*=gn;if(R!==L)R[i4]*=gn;
+    var add=i4+W+1,rem=i4-W;
+    if(add<n){sum+=mn[add];cb++;}
+    if(rem>=0){sum-=mn[rem];cb--;}
+  }
+}
+
+function toStereo(b){
+  if(b.numberOfChannels>=2)return b;
+  var o=ctx.createBuffer(2,b.length,b.sampleRate),d=b.getChannelData(0);
+  o.copyToChannel(d,0);o.copyToChannel(d,1);return o;
+}
+/* a few chunks from across the track, stitched, for fast tone iterations */
+function excerpt(b,secEach,count){
+  var sr=b.sampleRate,seg=Math.round(secEach*sr),n=b.length;
+  if(n<=seg*count*1.2)return b;
+  var o=ctx.createBuffer(2,seg*count,sr),f=Math.min(512,seg>>1);
+  for(var c=0;c<2;c++){
+    var src=b.getChannelData(Math.min(c,b.numberOfChannels-1)),dst=o.getChannelData(c);
+    for(var k=0;k<count;k++){
+      var s0=Math.floor((n-seg)*(0.1+0.8*k/(count-1))),base=k*seg;
+      dst.set(src.subarray(s0,s0+seg),base);
+      for(var i=0;i<f;i++){var r=i/f;dst[base+i]*=r;dst[base+seg-1-i]*=r;}
+    }
+  }
+  return o;
+}
+
+/* ---- graph pieces (all Web Audio, run in OfflineAudioContext) ---- */
+function mkTonePrefix(oc,srcNode,o){
+  var hp=oc.createBiquadFilter();hp.type='highpass';hp.frequency.value=o.lowcut;hp.Q.value=0.707;
+  srcNode.connect(hp);var last=hp;
+  BANDS.forEach(function(f,i){
+    var n=oc.createBiquadFilter();
+    n.type=i===0?'lowshelf':i===9?'highshelf':'peaking';
+    n.frequency.value=i===0?45:i===9?12000:f;n.Q.value=1.2;n.gain.value=o.tone[i];
+    last.connect(n);last=n;
+  });
+  return last;
+}
+function lr4(oc,type,f,from){
+  var a=oc.createBiquadFilter(),b=oc.createBiquadFilter();
+  a.type=b.type=type;a.frequency.value=b.frequency.value=f;a.Q.value=b.Q.value=0.7071;
+  from.connect(a);a.connect(b);return b;
+}
+function msChain(oc,from,width){
+  var sp=oc.createChannelSplitter(2);from.connect(sp);
+  var mid=oc.createGain(),side=oc.createGain();
+  var a=oc.createGain(),b=oc.createGain(),c=oc.createGain(),d=oc.createGain();
+  a.gain.value=0.5;b.gain.value=0.5;c.gain.value=0.5;d.gain.value=-0.5;
+  sp.connect(a,0);sp.connect(b,1);a.connect(mid);b.connect(mid);
+  sp.connect(c,0);sp.connect(d,1);c.connect(side);d.connect(side);
+  var hp=oc.createBiquadFilter();hp.type='highpass';hp.frequency.value=140;hp.Q.value=0.707;side.connect(hp);
+  var sw=oc.createGain();sw.gain.value=width;hp.connect(sw);
+  var nsw=oc.createGain();nsw.gain.value=-1;sw.connect(nsw);
+  var l=oc.createGain(),r=oc.createGain(),mg=oc.createChannelMerger(2);
+  mid.connect(l);sw.connect(l);mid.connect(r);nsw.connect(r);
+  l.connect(mg,0,0);r.connect(mg,0,1);
+  return mg;
+}
+function makeIR(oc,sr){
+  var sec=1.0,n=Math.floor(sec*sr),ir=oc.createBuffer(2,n,sr),seed=12345,tau=sec/6.0;
+  function rnd(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/2147483648-1;}
+  for(var c=0;c<2;c++){
+    var d=ir.getChannelData(c),y=0;
+    for(var i=0;i<n;i++){
+      var t=i/sr,a=0.2+0.75*Math.min(1,t/0.8);
+      y=a*y+(1-a)*rnd();
+      d[i]=y*Math.exp(-t/tau)*Math.min(1,t/0.004)*2.5;
+    }
+    [0.011,0.017+0.003*c,0.026,0.034].forEach(function(tt,k){
+      var idx=Math.floor(tt*sr);if(idx<n)d[idx]+=(0.6-0.12*k)*(c?-1:1)*(k%2?-1:1);
+    });
+  }
+  return ir;
+}
+async function renderDetect(src,o){
+  var oc=new OfflineAudioContext(2,src.length,src.sampleRate);
+  var s=oc.createBufferSource();s.buffer=src;
+  var last=mkTonePrefix(oc,s,o);
+  var lo=lr4(oc,'lowpass',XO1,last),rest=lr4(oc,'highpass',XO1,last),hi=lr4(oc,'highpass',XO2,rest);
+  var mg=oc.createChannelMerger(2);
+  [lo,hi].forEach(function(nd,k){
+    var m=oc.createGain();m.channelCount=1;m.channelCountMode='explicit';
+    nd.connect(m);m.connect(mg,0,k);
+  });
+  mg.connect(oc.destination);s.start(0);
+  return oc.startRendering();
+}
+function dynEnv(det,o,sr){
+  var lo=det.getChannelData(0),hi=det.getChannelData(1),eLo=null,eHi=null;
+  if(o.bass){
+    var r1=rmsDb(lo);
+    eLo=gainEnv(lo,sr,{th:r1+3,ratio:1+(o.crest<8?0.6:1.4)*o.s,knee:6,att:18,rel:140,hold:10,maxGR:6});
+  }
+  if(o.harsh){
+    var r2=rmsDb(hi),sv=o.harsh.sev;
+    eHi=gainEnv(hi,sr,{th:r2+4-5*sv,ratio:1+(1.2+3.8*sv)*o.s,knee:5,att:1.5,rel:60,hold:2,maxGR:9});
+  }
+  return [eLo,eHi];
+}
+async function renderMain(src,o,envLo,envHi){
+  var sr=src.sampleRate,n=src.length,oc=new OfflineAudioContext(2,n,sr);
+  var s=oc.createBufferSource();s.buffer=src;
+  var last=mkTonePrefix(oc,s,o);
+  var lo=lr4(oc,'lowpass',XO1,last),rest=lr4(oc,'highpass',XO1,last);
+  var mid=lr4(oc,'lowpass',XO2,rest),hi=lr4(oc,'highpass',XO2,rest);
+  var bs=oc.createGain();
+  function viaEnv(node,e){
+    if(!e){node.connect(bs);return;}
+    var g=oc.createGain();g.gain.value=0;
+    var eb=oc.createBuffer(1,n,sr);eb.copyToChannel(e,0);
+    var es=oc.createBufferSource();es.buffer=eb;es.connect(g.gain);es.start(0);
+    node.connect(g);g.connect(bs);
+  }
+  viaEnv(lo,envLo);mid.connect(bs);viaEnv(hi,envHi);
+  var pre=oc.createGain();bs.connect(pre);
+  if(o.warm>0){
+    var wh=oc.createBiquadFilter();wh.type='highpass';wh.frequency.value=110;
+    var wsh=oc.createWaveShaper();wsh.curve=satCurve(2.2);wsh.oversample='4x';
+    var wl=oc.createBiquadFilter();wl.type='lowpass';wl.frequency.value=9000;
+    var wg=oc.createGain();wg.gain.value=o.warm;
+    bs.connect(wh);wh.connect(wsh);wsh.connect(wl);wl.connect(wg);wg.connect(pre);
+  }
+  if(o.air.amt>0){
+    var ah=oc.createBiquadFilter();ah.type='highpass';ah.frequency.value=5500;ah.Q.value=0.7;
+    var al=oc.createBiquadFilter();al.type='lowpass';al.frequency.value=10000;al.Q.value=0.7;
+    var ad=oc.createGain();ad.gain.value=3;
+    var ash=oc.createWaveShaper();ash.curve=satCurve(2);ash.oversample='4x';
+    bs.connect(ah);ah.connect(al);al.connect(ad);ad.connect(ash);
+    var tail=lr4(oc,'highpass',o.air.f,ash);
+    var ag=oc.createGain();ag.gain.value=o.air.amt;
+    tail.connect(ag);ag.connect(pre);
+  }
+  var post=(Math.abs(o.width-1)>0.02)?msChain(oc,pre,o.width):pre;
+  var sum=oc.createGain();post.connect(sum);
+  if(o.room>0){
+    var rh=oc.createBiquadFilter();rh.type='highpass';rh.frequency.value=220;
+    var rd=oc.createDelay(0.1);rd.delayTime.value=0.014;
+    var cv=oc.createConvolver();cv.buffer=makeIR(oc,sr);
+    var rl=oc.createBiquadFilter();rl.type='lowpass';rl.frequency.value=6500;
+    var rg=oc.createGain();rg.gain.value=o.room;
+    post.connect(rh);rh.connect(rd);rd.connect(cv);cv.connect(rl);rl.connect(rg);rg.connect(sum);
+  }
+  sum.connect(oc.destination);s.start(0);
+  return oc.startRendering();
+}
+async function chainRender(src,o){
+  var env=[null,null];
+  if(o.bass||o.harsh){var det=await renderDetect(src,o);env=dynEnv(det,o,src.sampleRate);}
+  return renderMain(src,o,env[0],env[1]);
+}
+
+/* ---- decisions ---- */
+function toneLimit(i,g,a){
+  var hi=i===0?3:i===9?(a.cut?0:3):5;
+  return clamp(g,-9,hi);
+}
+function smOpts(a,tone){
+  var s=SM.amt,S=SM.stages,hv=Math.max(a.dev[7],a.dev[8]);
+  var sev=clamp((hv-1)/8,0.25,1),cutF=a.cut?a.cut.f:0;
+  var airAmt=S.air?s*(a.cut?0.9:(a.dev[9]<-3?0.6:0.3)):0;
+  var wT=a.mono?1:(a.sideDb<-30?1.6:a.sideDb<-22?1.35:a.sideDb<-14?1.12:1.0);
+  return {
+    tone:S.tone?tone:[0,0,0,0,0,0,0,0,0,0],lowcut:S.tone?26:5,
+    harsh:S.harsh?{sev:sev}:null,bass:S.bass?{}:null,
+    air:{amt:airAmt,f:Math.max(12000,cutF)},
+    warm:S.warm?0.22*s:0,width:S.stereo?1+(wT-1)*s:1,room:S.room?0.10*s:0,
+    crest:a.crest,s:s
+  };
+}
+function prog(f,msg){
+  $('smProgBar').style.width=Math.round(f*100)+'%';
+  if(msg)status(msg);
+}
+async function studioMaster(){
+  if(!buf||!an||mBusy||!ctx)return;
+  mBusy=true;smEnable();$('smProg').hidden=false;prog(0.02,'Gaane ka tone samajh raha hoon…');
+  try{
+    var s=SM.amt,S=SM.stages;
+    await pause0();
+    var src=toStereo(buf),ex=excerpt(src,10,4);
+    var a0=analyze(ex)||an;
+    var desired=a0.dev.map(function(d){return Math.abs(d)<1.5?d:d*(1-0.9*s);});
+    var tone=a0.dev.map(function(d,i){return toneLimit(i,-(d-desired[i]),an);});
+    if(S.tone){
+      for(var pass=0;pass<2;pass++){
+        prog(0.08+pass*0.17,'Awaaz sawaar raha hoon ('+(pass+1)+'/2)…');await pause0();
+        var outEx=await chainRender(ex,smOpts(an,tone));
+        var aE=analyze(outEx);if(!aE)break;
+        tone=tone.map(function(g,i){return toneLimit(i,g-(aE.dev[i]-desired[i])*0.85,an);});
+      }
+    }
+    prog(0.45,'Poora gaana master ho raha hai. Thoda time lagega…');await pause0();
+    var raw=await chainRender(src,smOpts(an,tone));
+    prog(0.85,'Loudness aur peak set ho raha hai…');await pause0();
+    var Ls=kLoud(src),tgt=SM.loud==='orig'?Math.min(Ls,-9):parseFloat(SM.loud);
+    var Lr=kLoud(raw),gdb=clamp(tgt-Lr,-12,12),g=Math.pow(10,gdb/20);
+    var outB=ctx.createBuffer(2,raw.length,raw.sampleRate);
+    for(var c=0;c<2;c++){var d0=raw.getChannelData(c),d1=outB.getChannelData(c);for(var i=0;i<d0.length;i++)d1[i]=d0[i]*g;}
+    limitBuf(outB,0.891);
+    prog(0.93,'Master ke baad dobara check ho raha hai…');await pause0();
+    mbuf=outB;anM=analyze(outB);
+    mInfo={l0:Ls,l1:kLoud(outB),s0:an.score,s1:anM?anM.score:null,gdb:gdb};
+    prog(1);
+    setBypass(false);
+    renderMasterUI();
+    status('Studio Master lag gaya. "Original" aur "Studio Master" dabake compare karo.');
+    requestDraw(600);
+  }catch(e){
+    status('Master nahi ho paya'+(e&&e.message?' ('+e.message+')':'')+'. Dobara try karo.',true);
+  }
+  mBusy=false;$('smProg').hidden=true;smEnable();
+}
+function clearMaster(){mbuf=null;anM=null;mInfo=null;renderMasterUI();}
+function smEnable(){
+  var b=$('smGo');if(!b)return;
+  b.disabled=!buf||!an||!ctx||mBusy;
+  b.textContent=mBusy?'Ho raha hai…':(mbuf?'Dobara master karo':'Studio Master lagao');
+  $('smOff').disabled=!mbuf||mBusy;
+}
+function kv(label,val){
+  var d=el('div','kv');d.appendChild(el('span','k',label));d.appendChild(el('span','v mono',val));return d;
+}
+function renderMasterUI(){
+  var has=!!mbuf;
+  $('abEq').textContent=has?'Studio Master':'EQ ke saath';
+  $('legM').hidden=!has;
+  var r=$('smResult');r.textContent='';r.hidden=!has;
+  smEnable();
+  if(!has||!mInfo)return;
+  var cmp=el('div','cmp');
+  if(mInfo.s1!=null)cmp.appendChild(kv('AI-feel score',mInfo.s0+' → '+mInfo.s1));
+  cmp.appendChild(kv('Loudness',mInfo.l0.toFixed(1)+' → '+mInfo.l1.toFixed(1)+' LUFS'));
+  r.appendChild(cmp);
+  var msg;
+  if(mInfo.s1==null)msg='Master ho gaya.';
+  else{
+    var d=mInfo.s0-mInfo.s1;
+    msg=d>=15?'AI wali chhap kaafi kam ho gayi.':d>=5?'AI wali chhap thodi kam hui.':'Score mein zyada fark nahi pada. Gaana pehle se kaafi saaf tha, ya jo kamiyaan bachi hain wo EQ se door nahi hoti.';
+  }
+  var notes=[];
+  if(anM&&anM.cut)notes.push('Upar ki kati hui awaaz poori wapas nahi aati, sirf halki hawa jodi gayi hai.');
+  if(anM&&anM.crest<9)notes.push('Dabi hui dynamics master se wapas nahi aati.');
+  r.appendChild(el('p','fdet',[msg].concat(notes).join(' ')));
+  if(anM){
+    var left=anM.findings.filter(function(f){return f.sev!=='good';});
+    if(left.length){
+      var ul=el('ul','finds');
+      left.forEach(function(f){
+        var li=el('li'),h=el('div','fhead');
+        h.appendChild(el('span','pill '+f.sev,PILL[f.sev]));h.appendChild(el('strong',null,f.title));
+        li.appendChild(h);ul.appendChild(li);
+      });
+      r.appendChild(el('div','eyebrow','Abhi bhi bachi hain'));r.appendChild(ul);
+    }
+  }
+}
+function buildMasterUI(){
+  var amt=$('smAmt'),out=$('smAmtOut');
+  amt.addEventListener('input',function(){SM.amt=parseInt(amt.value,10)/100;out.textContent=amt.value+'%';});
+  var sg=$('smLoud');
+  SM_LOUD.forEach(function(p){
+    var b=el('button',null,p[1]);b.type='button';b.setAttribute('aria-pressed',String(SM.loud===p[0]));
+    b.addEventListener('click',function(){
+      SM.loud=p[0];[].forEach.call(sg.children,function(x){x.setAttribute('aria-pressed','false');});
+      b.setAttribute('aria-pressed','true');
+    });
+    sg.appendChild(b);
+  });
+  var sw=$('smStages');
+  SM_STAGES.forEach(function(p){
+    var b=el('button','chip',p[1]);b.type='button';b.setAttribute('aria-pressed',String(SM.stages[p[0]]));
+    b.addEventListener('click',function(){
+      SM.stages[p[0]]=!SM.stages[p[0]];b.setAttribute('aria-pressed',String(SM.stages[p[0]]));
+    });
+    sw.appendChild(b);
+  });
+  $('smGo').addEventListener('click',studioMaster);
+  $('smOff').addEventListener('click',function(){
+    var was=playing;if(was)offset=pos();
+    clearMaster();
+    if(was)play();
+    status('Master hata diya. Ab original gaana hai.');
+    requestDraw(400);
+  });
+}
+
 /* ---------- wiring ---------- */
 function wire(){
-  buildEq();buildPresets();
+  buildEq();buildPresets();buildMasterUI();
   $('play').addEventListener('click',function(){playing?pause():play();});
   $('loopBtn').addEventListener('click',function(){
     loop=!loop;$('loopBtn').setAttribute('aria-pressed',String(loop));
@@ -948,7 +1387,10 @@ function wire(){
         if(!dlCap){$('exportBtn').hidden=true;$('expNote').textContent='Is view mein file save nahi ho sakti. Claude app ya claude.ai mein page kholo.';}
         else $('exportBtn').disabled=!buf;
       }).catch(function(){dlCap=null;$('exportBtn').hidden=true;});
-    }else{standalone=true;dlCap={save:function(r){var a=document.createElement('a'),u=URL.createObjectURL(r.data);a.href=u;a.download=r.filename;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},5000);return Promise.resolve({status:'saved'});}};$('exportBtn').disabled=!buf;$('expNote').textContent='Gaana WAV file ki tarah seedha download hoga.';}
+    }else{
+      dlCap={direct:true,save:function(r){var a=document.createElement('a'),u=URL.createObjectURL(r.data);a.href=u;a.download=r.filename;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},8000);return Promise.resolve({status:'saved'});}};
+      $('exportBtn').disabled=!buf;$('expNote').textContent='Gaana WAV file ki tarah seedha download hoga.';
+    }
   }catch(e){$('exportBtn').hidden=true;}
   sizeCanvas();updatePlayUI();renderVerdict();requestDraw(300);
   if(initAudio()){loadDemo();}
